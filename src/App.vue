@@ -1,28 +1,33 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <sandbox-container></sandbox-container>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+//import HelloWorld from './components/HelloWorld.vue'
+import sandboxContainer from './view/sandboxContainer.vue';
 
 export default {
   name: 'App',
-  components: {
-    HelloWorld
-  }
+  components: {sandboxContainer}
 }
 </script>
 
 <style lang="scss">
+body, html {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  background: url('/img/bg-01.png');
+  background-position-y: 5%;
+  width: 100%;
+  height: 100%;
 }
 </style>
