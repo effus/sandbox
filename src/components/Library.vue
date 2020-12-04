@@ -8,13 +8,15 @@
                 v-bind="moveable">
                 <svg-box :ref="'sprite-' + sprite.id" :sourse="sprite.sourse"></svg-box>
             </Moveable -->
+            
             <svg-box 
                 :id="sprite.id" 
                 :sourse="sprite.sourse" 
                 :ref="'sprite-' + sprite.id" 
                 class="sprite" 
                 :key="sprite.id" 
-                v-on:select="onSelectItem"
+                :style="getLibPosition(sprite)"
+                v-on:select="onSelectItem(sprite)"
             ></svg-box>
         </template>
     </div>
@@ -36,6 +38,9 @@ export default {
     methods: {
         onSelectItem(payload) {
             this.$emit('select', payload);
+        },
+        getLibPosition(item) {
+            return 'left: ' + item.left + 'px; top:' + item.top + 'px;'
         }
     }
 }
@@ -45,7 +50,9 @@ export default {
 .library {
     width: 110px;
     height: 100%;
-    overflow: visible;
-    position: absolute;
+    position: relative;
+    .sprite {
+        position: absolute;
+    }
 }
 </style>

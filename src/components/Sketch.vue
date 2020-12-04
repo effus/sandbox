@@ -1,5 +1,5 @@
 <template>
-    <div class="sketch" :class="{active: isActive}" ref="sketch">
+    <div class="sketch" :class="{active: isActive}" ref="sketch" v-on:dblclick="onDoubleClick">
         <template v-for="sprite in this.sprites">
             <Moveable v-if="sprite.selected" :key="sprite.id" :id="sprite.id"
                 class="sprite-wrapper"
@@ -19,6 +19,12 @@
                 ></svg-box>
             </div>
         </template>
+        <template v-for="(textSprite, index) in this.texts">
+            <div class="text-sprite" :style="getTextSpritePosition(textSprite)" :key="index">{{textSprite.text}}</div>
+        </template>
+        <div class="text-input-wrapper" v-if="text.isVisible" :style="textInputPosition">
+            <input type="text" v-on:blur="setText" v-model="text.value" />
+        </div>
     </div>
 </template>
 
@@ -30,6 +36,10 @@ export default {
     components: { Moveable, SvgBox },
     props: {
         sprites: {
+            type: Array,
+            default: () => []
+        },
+        texts: {
             type: Array,
             default: () => []
         },
@@ -54,6 +64,14 @@ export default {
             drag: {
                 left: null,
                 top: null
+            },
+            text: {
+                isVisible: false,
+                position: {
+                    left: 0,
+                    right: 0
+                },
+                value: ''
             }
         }
     },
@@ -77,6 +95,34 @@ export default {
         },
         onSelectItem(payload) {
             this.$emit('select', payload);
+        },
+        onDoubleClick(event) {
+            if (this.text.isVisible) {
+                return;
+            }
+            this.text.value = '';
+            this.text.isVisible = true;
+            this.text.position.left = event.clientX - 14;
+            this.text.position.top = event.offsetY - 10;
+        },
+        setText(event) {
+            this.text.isVisible = false;
+            if (!this.text.value) {
+                return;
+            }
+            this.$emit('put-text', {
+                text: this.text.value,
+                top: this.text.position.top + 4,
+                left: this.text.position.left + 4
+            });
+        },
+        getTextSpritePosition(textSprite) {
+            return 'left: ' + textSprite.left + 'px; top: ' + textSprite.top + 'px;';
+        }
+    },
+    computed: {
+        textInputPosition() {
+            return 'left: ' + this.text.position.left + 'px; top: ' + this.text.position.top + 'px;';
         }
     }
 }
@@ -89,6 +135,10 @@ export default {
     width: 100%;
     bottom: 0;
     box-sizing: border-box;
+    -webkit-user-select: none;  /* Chrome all / Safari all */
+    -moz-user-select: none;     /* Firefox all */
+    -ms-user-select: none;      /* IE 10+ */
+    user-select: none;  
     .sprite-wrapper {
         width: 110px;
         height: 110px;
@@ -96,6 +146,26 @@ export default {
     }
     &.active {
         background-color: #cccccc0f;
+    }
+    .text-input-wrapper {
+        position: absolute;
+        input {
+            background-color: #33333366;
+            border: 0 none;
+            color: #ffb100;
+            padding: 8px;
+            border-bottom: 1px solid #ffb100;
+            &:focus {
+                border: 0 none;
+                outline: none;
+                border-bottom: 1px solid #ffb100;
+            }
+        }
+    }
+    .text-sprite {
+        position: absolute;
+        color: #ffb100;
+        font-size: 14px;
     }
 }
 </style>

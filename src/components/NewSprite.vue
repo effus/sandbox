@@ -10,6 +10,7 @@
                 <button class="btn-bg blue" @click="setStrokeColor('#026cff')"></button>
                 <button class="btn-bg green" @click="setStrokeColor('#00bc00')"></button>
             </div>
+            <button type="button" @click="undo" v-if="this.history.length > 0">Undo ({{this.history.length}})</button>
             <button class="right">Close</button>
         </div>
         <div class="viewport" v-if="flagClear"></div>
@@ -27,17 +28,22 @@ export default {
         return {
             stroke: '#ffb100',
             pencil: null,
-            flagClear: true
+            flagClear: true,
+            history: []
         }
     },
     mounted() {
-        this.pencil = pencil({
-            stroke: this.stroke,
-            strokeWidth: 5
-        });
-        this.pencil.appendTo('.new-object .viewport');
+        this.mountSvg();
     },
     methods: {
+        mountSvg() {
+            this.pencil = pencil({
+                stroke: this.stroke,
+                strokeWidth: 5
+            });
+            this.pencil.appendTo('.new-object .viewport');
+            this.pencil.on('points', this.onDrawPath);
+        },
         async saveSprite() {
             var svgSource = this.pencil.toSource();
             this.flagClear = false;
@@ -47,17 +53,42 @@ export default {
                 id: (new Date()).getTime(),
                 sourse: svgSource
             });
+            this.history = [];
         },
         setStrokeColor(color) {
             this.color = color;
             this.pencil.stroke = color;
         },
         async viewportClear() {
+            await this.resetViewport();
+            this.history = [];
+            this.mountSvg();
+        },
+        async resetViewport() {
             this.flagClear = false;
             await this.$nextTick();
             this.flagClear = true;
-            await this.$nextTick(); 
+            await this.$nextTick();
         },
+        async onDrawPath() {
+            await this.$nextTick();
+            var svgSource = this.pencil.toSource();
+            this.history.push(svgSource);
+        },
+        async undo() {
+            await this.resetViewport();
+            await this.$nextTick();
+            if (this.history.length > 0) {
+                this.history.splice(this.history.length-1);
+                this.pencil = pencil.parse(this.history[this.history.length - 1]);
+            }
+            await this.$nextTick();
+            this.pencil.appendTo('.new-object .viewport');
+            this.setStrokeColor(this.color);
+            this.pencil.strokeWidth = 5;
+            this.pencil.on('points', this.onDrawPath);
+            this.pencil.enable();
+        }
     }
 }
 </script>
@@ -65,7 +96,7 @@ export default {
 <style lang="scss">
 .new-object {
     position: absolute;
-    z-index: 500;
+    z-index: 9999;
     top: 6%;
     left: 3%;
     width:500px;

@@ -3,6 +3,8 @@
         <header>
             <div class="controls">
                 <button @click="showNewSpriteDialog">New sprite</button>
+                <button @click="onClearSkatch">Clear</button>
+                <button @click="onDeleteSelected">Delete</button>
             </div>
             <div class="title">Sandbox <span>effus/sandbox</span></div>
             <div class="reserved"></div>
@@ -11,8 +13,10 @@
             <library :list="library" v-on:select="onLibSelect" :class="{atTop: atTop==='library'}"></library>
             <sketch 
                 :sprites="sprites" :class="{atTop: atTop==='sketch'}" 
+                :texts="texts"
                 :is-active="atTop==='sketch'"
                 v-on:select="onSelectSprite"
+                v-on:put-text="onPutText"
                 v-on:change-position="onChangeSpritePosition"></sketch>
         </div>
         
@@ -40,6 +44,7 @@ export default {
         return {
             library: [],
             sprites: [],
+            texts: [],
             newSprite: {
                 isVisible: false
             },
@@ -50,20 +55,51 @@ export default {
         this.popupItem = this.$el;
     },
     methods: {
+        getActiveAreaHeight() {
+            return (window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight) - 100;
+        },
+        getLibraryCellSize() {
+            return {
+                width: 110,
+                height: 110
+            }
+        },
+        getLibPosition(libIndex) { // 1
+            const rowsInColumn = Math.floor(this.getActiveAreaHeight() / this.getLibraryCellSize().height); // 6
+            const column = Math.floor(libIndex / rowsInColumn);
+            const row = libIndex - rowsInColumn * column;
+            return {
+                top: this.getLibraryCellSize().height * row,
+                left: this.getLibraryCellSize().width * column
+            }
+        },
         onSaveSprite(payload) {
+            const libPosition = this.getLibPosition(this.library.length);
+            payload = Object.assign({}, payload, {
+                libIndex: this.library.length,
+                top: libPosition.top,
+                left: libPosition.left, 
+                selected: false
+            });
             this.library.push(payload);
             this.newSprite.isVisible = false;
         },
         async showNewSpriteDialog() {
             this.newSprite.isVisible = true;
         },
-        onLibSelect(payload) {
+        async onLibSelect(payload) {
+            this.disableSkatchSprites();
+            await this.$nextTick();
+            this.newSprite.isVisible = false;
+            const libPosition = this.getLibPosition(payload.libIndex);
             this.sprites.push(Object.assign({}, payload, {
-                top: 100 * (this.library.length - 1) + 10 *  (this.library.length - 1),
-                left: 0, 
+                libId: payload.id,
+                top: libPosition.top,
+                left: libPosition.left, 
                 selected: true
             }));
             this.atTop = 'sketch';
+            
         },
         onChangeSpritePosition(payload) {
             this.sprites = this.sprites.map((item) => {
@@ -78,13 +114,50 @@ export default {
             this.atTop = 'library';
         },
         onSelectSprite(payload) {
+            this.newSprite.isVisible = false;
             this.sprites = this.sprites.map((item) => {
                 if (item.id === payload.id) {
                     item.selected = true;
                 }
                 return item;
             });
+            this.disableLibSprites();
             this.atTop = 'library';
+        },
+        onClearSkatch() {
+            this.sprites = [];
+            this.atTop = 'library';
+            this.newSprite.isVisible = false;
+        },
+        disableLibSprites() {
+            this.library = this.library.map((item) => {
+                item.selected = false;
+                return item;
+            });
+        },
+        disableSkatchSprites() {
+            this.sprites = this.sprites.map((item) => {
+                item.selected = false;
+                return item;
+            });
+        },
+        onDeleteSelected() {
+            this.library = this.library.filter((item) => {
+                return item.selected === false;
+            });
+            this.library = this.library.map((item, index) => {
+                const libPosition = this.getLibPosition(index);
+                item.top = libPosition.top;
+                item.left = libPosition.left;
+                return item;
+            });
+            this.sprites = this.sprites.filter((item) => {
+                return item.selected === false;
+            });
+            this.atTop = 'library';
+        },
+        onPutText(payload) {
+            this.texts.push(payload);
         }
     },
     directives: {
@@ -102,6 +175,7 @@ button {
     box-shadow: 1px 1px 1px #000;
     border-radius: 3px;
     border: 1px solid $activeColor;
+    margin-right: 2px;
     &:hover {
         border-color: lighten($color: $activeColor, $amount: 15);
         color: lighten($color: $activeColor, $amount: 15);
