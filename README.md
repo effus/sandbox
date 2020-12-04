@@ -1,4 +1,8 @@
-# sandbox
+# Sandbox
+
+Творческий проект для создания скетчей 
+
+![Screen](https://i.ibb.co/6tM4Z8B/2020-12-04-15-36-23.png)
 
 ## Project setup
 ```

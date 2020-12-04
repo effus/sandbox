@@ -20,7 +20,7 @@
             </div>
         </template>
         <template v-for="(textSprite, index) in this.texts">
-            <div class="text-sprite" :style="getTextSpritePosition(textSprite)" :key="index">{{textSprite.text}}</div>
+            <div class="text-sprite" @click="onTextClick(index)" :style="getTextSpritePosition(textSprite)" :key="index">{{textSprite.text}}</div>
         </template>
         <div class="text-input-wrapper" v-if="text.isVisible" :style="textInputPosition">
             <input type="text" v-on:blur="setText" v-model="text.value" />
@@ -118,6 +118,11 @@ export default {
         },
         getTextSpritePosition(textSprite) {
             return 'left: ' + textSprite.left + 'px; top: ' + textSprite.top + 'px;';
+        },
+        onTextClick(index) {
+            this.$emit('remove-text', {
+                index: index
+            });
         }
     },
     computed: {

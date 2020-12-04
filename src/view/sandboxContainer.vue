@@ -4,7 +4,7 @@
             <div class="controls">
                 <button @click="showNewSpriteDialog">New sprite</button>
                 <button @click="onClearSkatch">Clear</button>
-                <button @click="onDeleteSelected">Delete</button>
+                <button @click="onDeleteSelected">Delete selected</button>
             </div>
             <div class="title">Sandbox <span>effus/sandbox</span></div>
             <div class="reserved"></div>
@@ -17,6 +17,7 @@
                 :is-active="atTop==='sketch'"
                 v-on:select="onSelectSprite"
                 v-on:put-text="onPutText"
+                v-on:remove-text="onRemoveText"
                 v-on:change-position="onChangeSpritePosition"></sketch>
         </div>
         
@@ -99,7 +100,6 @@ export default {
                 selected: true
             }));
             this.atTop = 'sketch';
-            
         },
         onChangeSpritePosition(payload) {
             this.sprites = this.sprites.map((item) => {
@@ -158,6 +158,9 @@ export default {
         },
         onPutText(payload) {
             this.texts.push(payload);
+        },
+        onRemoveText(payload) {
+            this.texts.splice(payload.index, 1);
         }
     },
     directives: {
