@@ -25,7 +25,7 @@ body, html {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: url('img/bg-01.png');
+  background: url('https://i.ibb.co/7CDdzJf/bg-01.png');
   background-color: #333333;
   background-position-y: 5%;
   width: 100%;

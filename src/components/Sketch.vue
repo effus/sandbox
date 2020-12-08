@@ -1,5 +1,10 @@
 <template>
-    <div class="sketch" :class="{active: isActive}" ref="sketch" v-on:dblclick="onDoubleClick">
+    <div class="sketch"
+        @keyup.delete="onPressDelete"
+        :class="{active: isActive}" 
+        ref="sketch" 
+        v-on:click="onClickSketch" 
+        v-on:dblclick="onDoubleClick">
         <template v-for="sprite in this.sprites">
             <Moveable v-if="sprite.selected" :key="sprite.id" :id="sprite.id"
                 class="sprite-wrapper"
@@ -9,8 +14,12 @@
                 v-bind="moveable">
                 <svg-box class="sprite" :ref="'sprite-' + sprite.id" :sourse="sprite.sourse"></svg-box>
             </Moveable>
-            <div v-else class="sprite-wrapper placed" :style="stylePosition(sprite)" :key="sprite.id" 
-                :id="sprite.id" >
+            <div v-else class="sprite-wrapper placed" 
+                :style="stylePosition(sprite)" 
+                :key="sprite.id" 
+                :id="sprite.id"
+                @click.stop="() => true"
+                >
                 <svg-box 
                     :sourse="sprite.sourse" 
                     :ref="'sprite-' + sprite.id" 
@@ -20,10 +29,22 @@
             </div>
         </template>
         <template v-for="(textSprite, index) in this.texts">
-            <div class="text-sprite" @click="onTextClick(index)" :style="getTextSpritePosition(textSprite)" :key="index">{{textSprite.text}}</div>
+            <Moveable v-if="textSprite.selected" :key="textSprite.id" :id="textSprite.id"
+                class="text-sprite"
+                :style="getTextSpritePosition(textSprite)"
+                @drag="handleDrag"
+                @dragEnd="handleTextDragEnd(index)"
+                v-bind="moveable">
+                {{textSprite.text}}
+            </Moveable>
+            <div v-else class="text-sprite" 
+                @click.stop="onTextClick(index)" 
+                v-on:dblclick.stop="onTextDblClick(index)" 
+                :style="getTextSpritePosition(textSprite)" 
+                :key="index">{{textSprite.text}}</div>
         </template>
         <div class="text-input-wrapper" v-if="text.isVisible" :style="textInputPosition">
-            <input type="text" v-on:blur="setText" v-model="text.value" />
+            <input type="text" ref="inputText" v-on:blur="setText" v-model="text.value" />
         </div>
     </div>
 </template>
@@ -31,6 +52,7 @@
 <script>
 import SvgBox from './SvgBox.vue';
 import Moveable from 'vue-moveable';
+
 export default {
     name: 'Sketch',
     components: { Moveable, SvgBox },
@@ -75,17 +97,29 @@ export default {
             }
         }
     },
+    mounted() {
+        document.addEventListener("keydown", this.onDocumentKeydown);
+    },
+    destroyed() {
+        document.removeEventListener("keydown");
+    },
     methods: {
         handleDrag({ target, left, top }) {
             target.style.left = `${left}px`;
             target.style.top = `${top}px`;
             this.drag.left = left;
             this.drag.top = top;
-            //console.log('handleDrag', target, left, top);
         },
         handleDragEnd(payload) {
-            this.$emit('change-position', {
+            this.$emit('change-sprite-position', {
                 sprite: payload,
+                top: this.drag.top,
+                left: this.drag.left
+            });
+        },
+        handleTextDragEnd(payload) {
+            this.$emit('change-text-position', {
+                index: payload,
                 top: this.drag.top,
                 left: this.drag.left
             });
@@ -94,16 +128,25 @@ export default {
             return 'left: ' + sprite.left + 'px; top: ' + sprite.top + 'px;';
         },
         onSelectItem(payload) {
-            this.$emit('select', payload);
+            console.log('on-select-item', payload);
+            this.$emit('select-sprite', payload);
         },
-        onDoubleClick(event) {
+        onClickSketch() {
+            this.$emit('deselect-text');
+            this.$emit('deselect-sprite');
+            console.log('onClickSketch');
+        },
+        async onDoubleClick(event) {
             if (this.text.isVisible) {
                 return;
             }
             this.text.value = '';
             this.text.isVisible = true;
-            this.text.position.left = event.clientX - 14;
+            this.text.position.left = event.clientX - 8;
             this.text.position.top = event.offsetY - 10;
+            event.preventDefault();
+            await this.$nextTick();
+            this.$refs.inputText.focus();
         },
         setText(event) {
             this.text.isVisible = false;
@@ -112,17 +155,47 @@ export default {
             }
             this.$emit('put-text', {
                 text: this.text.value,
-                top: this.text.position.top + 4,
-                left: this.text.position.left + 4
+                top: this.text.position.top + 7,
+                left: this.text.position.left + 8
             });
+            event.preventDefault();
         },
         getTextSpritePosition(textSprite) {
             return 'left: ' + textSprite.left + 'px; top: ' + textSprite.top + 'px;';
         },
         onTextClick(index) {
-            this.$emit('remove-text', {
+            this.$emit('select-text', {
                 index: index
             });
+        },
+        onPressDelete() {
+            let selected = this.texts.filter((item, i) => {
+                item.index = i;
+                return item.selected === true;
+            });
+            if (selected.length === 1 && !this.text.isVisible) {
+                this.$emit('remove-text', {index: selected[0].index});
+            }
+            console.log('remove-text', selected);
+            selected = this.sprites.filter((item, i) => {
+                item.index = i;
+                return item.selected === true;
+            });
+             if (selected.length === 1 && !this.text.isVisible) {
+                this.$emit('remove-sprite', {index: selected[0].index});
+            }
+            console.log('remove-sprite', selected);
+        },
+        handleSelectedTextClickOutside(index) {
+            this.$emit('deselect-text', {
+                index: index
+            });
+        },
+        onDocumentKeydown(event) {
+            if (event.keyCode === 46) {
+                console.log('onDocumentKeydown', 46);
+                this.onPressDelete();
+            }
         }
     },
     computed: {
@@ -160,6 +233,7 @@ export default {
             color: #ffb100;
             padding: 8px;
             border-bottom: 1px solid #ffb100;
+            font-size: 14px;
             &:focus {
                 border: 0 none;
                 outline: none;

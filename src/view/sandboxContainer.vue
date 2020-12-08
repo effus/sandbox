@@ -4,21 +4,27 @@
             <div class="controls">
                 <button @click="showNewSpriteDialog">New sprite</button>
                 <button @click="onClearSkatch">Clear</button>
-                <button @click="onDeleteSelected">Delete selected</button>
+                <!-- <button @click="onDeleteSelected">Delete selected</button> -->
             </div>
-            <div class="title">Sandbox <span>effus/sandbox</span></div>
+            <div class="title">Sandbox <span>v.1.0.0</span></div>
             <div class="reserved"></div>
         </header>
         <div class="workarea">
             <library :list="library" v-on:select="onLibSelect" :class="{atTop: atTop==='library'}"></library>
             <sketch 
-                :sprites="sprites" :class="{atTop: atTop==='sketch'}" 
+                :sprites="sprites" :class="{atTop: atTop==='sketch'}"
                 :texts="texts"
                 :is-active="atTop==='sketch'"
-                v-on:select="onSelectSprite"
+                v-on:select-sprite="onSelectSprite"
+                v-on:select-text="onSelectText"
                 v-on:put-text="onPutText"
                 v-on:remove-text="onRemoveText"
-                v-on:change-position="onChangeSpritePosition"></sketch>
+                v-on:remove-sprite="onRemoveSprite"
+                v-on:change-sprite-position="onChangeSpritePosition"
+                v-on:change-text-position="onChangeTextPosition"
+                v-on:deselect-text="onDeselectText"
+                v-on:deselect-sprite="onDeselectSprite"
+            ></sketch>
         </div>
         
         <new-sprite 
@@ -30,8 +36,6 @@
 <script>
 import SvgBox from '../components/SvgBox.vue';
 import Moveable from 'vue-moveable';
-import Vue from 'vue';
-import ClickOutside from 'vue-click-outside'
 import Library from '../components/Library.vue';
 import NewSprite from '../components/NewSprite.vue';
 import Sketch from '../components/Sketch.vue';
@@ -113,6 +117,11 @@ export default {
             });
             this.atTop = 'library';
         },
+        onChangeTextPosition(payload) {
+            this.texts[payload.index].top = payload.top;
+            this.texts[payload.index].left = payload.left;
+            this.atTop = 'library';
+        },
         onSelectSprite(payload) {
             this.newSprite.isVisible = false;
             this.sprites = this.sprites.map((item) => {
@@ -124,8 +133,16 @@ export default {
             this.disableLibSprites();
             this.atTop = 'library';
         },
+        onSelectText(payload) {
+            this.newSprite.isVisible = false;
+            this.disableSkatchTexts();
+            this.texts[payload.index].selected = true;
+            this.disableLibSprites();
+            this.disableSkatchSprites();
+        },
         onClearSkatch() {
             this.sprites = [];
+            this.texts = [];
             this.atTop = 'library';
             this.newSprite.isVisible = false;
         },
@@ -137,6 +154,12 @@ export default {
         },
         disableSkatchSprites() {
             this.sprites = this.sprites.map((item) => {
+                item.selected = false;
+                return item;
+            });
+        },
+        disableSkatchTexts() {
+            this.texts = this.texts.map((item) => {
                 item.selected = false;
                 return item;
             });
@@ -161,10 +184,16 @@ export default {
         },
         onRemoveText(payload) {
             this.texts.splice(payload.index, 1);
+        },
+        onRemoveSprite(payload) {
+            this.sprites.splice(payload.index, 1);
+        },
+        onDeselectText() {
+            this.disableSkatchTexts();
+        },
+        onDeselectSprite() {
+            this.disableSkatchSprites();
         }
-    },
-    directives: {
-        ClickOutside
     }
 }
 </script>
